@@ -34,16 +34,16 @@ The <what> argument must be one of:
 
     const fileToIDFileName = techFilesDir + "fileIDs.json";
 
-    function spawnSingleInstance(worklist, what) {
+    function spawnSingleInstance(worklist, prefix, what) {
         console.log("Left in worklist: " + worklist.length + ". Spawning an instance.");
         const jsFiles = worklist.pop();
         if (jsFiles) {
-            const argsToPass = [process.argv[1], what, "--files"].concat(jsFiles);
+            const argsToPass = [process.argv[1], what, prefix, "--files"].concat(jsFiles);
             const cmd = spawn("node", argsToPass);
             cmd.on("close", (code) => {
                 console.log("Instance has finished with exit code " + code);
                 if (worklist.length > 0) {
-                    spawnSingleInstance(worklist, what);
+                    spawnSingleInstance(worklist, prefix, what);
                 }
             });
             cmd.stdout.on('data', (data) => {
@@ -55,7 +55,7 @@ The <what> argument must be one of:
         }
     }
 
-    function spawnInstances(nbInstances, jsFiles, what) {
+    function spawnInstances(nbInstances, jsFiles, prefix, what) {
         const worklist = [];
         for (let i = 0; i < jsFiles.length; i += filesPerParallelInstance) {
             const chunkOfJSFiles = jsFiles.slice(i, i + filesPerParallelInstance);
@@ -63,7 +63,7 @@ The <what> argument must be one of:
         }
 
         for (let instance = 0; instance < nbInstances; instance++) {
-            spawnSingleInstance(worklist, what);
+            spawnSingleInstance(worklist, prefix, what);
         }
     }
 
@@ -106,18 +106,19 @@ The <what> argument must be one of:
     // read command line arguments
     const args = process.argv.slice(2);
     const what = args[0];
+    const prefix = args[1];
     if (["tokens", "calls", "assignments", "callsMissingArg", "binOps", "idsLitsWithTokens", "idsLitsWithIds", "idsLitsWithASTFamily"].indexOf(what) === -1) {
         console.log(usage);
         process.exit(1);
     }
-    if (args[1] === "--parallel") {
-        if (args.length !== 5) {
+    if (args[2] === "--parallel") {
+        if (args.length !== 6) {
             console.log(usage);
             process.exit(1);
         }
-        const nbInstances = args[2];
-        const fileListFile = args[3];
-        const dir = args[4];
+        const nbInstances = args[3];
+        const fileListFile = args[4];
+        const dir = args[5];
 
         // filter to use only files in file list
         const relativeJsFiles = walkSync(dir, {globs:["**/*.js"], directories:false});
@@ -130,8 +131,8 @@ The <what> argument must be one of:
         }
         console.log("Total number of files: " + jsFiles.length);
         getOrCreateFileToID(jsFiles);
-        spawnInstances(nbInstances, jsFiles, what);
-    } else if (args[1] === "--files") {
+        spawnInstances(nbInstances, jsFiles, prefix, what);
+    } else if (args[2] === "--files") {
         let extractor;
         if (what === "calls") extractor = require("./extractorOfCalls");
         else if (what === "assignments") extractor = require("./extractorOfAssignments2");
@@ -143,7 +144,7 @@ The <what> argument must be one of:
         else if (what === "callsMissingArg") extractor = require("./extractorOfCallsMissingArg");
 
         const allData = [];
-        const jsFiles = args.slice(2);
+        const jsFiles = args.slice(3);
         let fileToID = getOrCreateFileToID(jsFiles);
         for (let i = 0; i < jsFiles.length; i++) {
             const jsFile = jsFiles[i];
@@ -155,7 +156,7 @@ The <what> argument must be one of:
                 extractor.visitFile(jsFile, allData);
             }
         }
-        const fileName = techFilesDir + what + "_" + Date.now() + ".json";
+        const fileName = techFilesDir + what + "_" + prefix + "_" + Date.now() + ".json";
         console.log("Writing " + allData.length + " items to file " + fileName);
         fs.writeFileSync(fileName, JSON.stringify(allData, null, 2));
     } else {
