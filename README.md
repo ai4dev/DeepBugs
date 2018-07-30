@@ -43,12 +43,13 @@ Each bug detector addresses a particular bug pattern, e.g.:
 
 #### Step 1: Extract positive and negative training examples
 
-`node javascript/extractFromJS.js calls --parallel 4 data/js/programs_50_training.txt data/js/programs_50`
+`node javascript/extractFromJS.js calls prefix --parallel 4 data/js/programs_50_training.txt data/js/programs_50`
 
+  * Second argument is prefix appended to names of all files.
   * The `--parallel` argument sets the number of processes to run.
   * `programs_50_training.txt` contains files to include (one file per line). To extract data for validation, run the command with `data/js/programs_50_eval.txt`.
   * The last argument is a directory that gets recursively scanned for .js files, considering only files listed in the file provided as the second argument.
-  * The command produces `calls_*.json` files, which is data suitable for the `SwappedArgs` bug detector. For the other bug two detectors, replace `calls` with `binOps` in the above command.
+  * The command produces `calls_prefix*.json` files, which is data suitable for the `SwappedArgs` bug detector. For the other bug two detectors, replace `calls` with `binOps` in the above command.
 
 #### Step 2: Train a classifier to identify bugs
 
