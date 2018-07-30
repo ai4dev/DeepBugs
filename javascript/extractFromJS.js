@@ -30,7 +30,9 @@ The <what> argument must be one of:
 
     const filesPerParallelInstance = 200;
 
-    const fileToIDFileName = "fileIDs.json";
+    const techFilesDir = "data/tech/";
+
+    const fileToIDFileName = techFilesDir + "fileIDs.json";
 
     function spawnSingleInstance(worklist, what) {
         console.log("Left in worklist: " + worklist.length + ". Spawning an instance.");
@@ -153,7 +155,7 @@ The <what> argument must be one of:
                 extractor.visitFile(jsFile, allData);
             }
         }
-        const fileName = what + "_" + Date.now() + ".json";
+        const fileName = techFilesDir + what + "_" + Date.now() + ".json";
         console.log("Writing " + allData.length + " items to file " + fileName);
         fs.writeFileSync(fileName, JSON.stringify(allData, null, 2));
     } else {
