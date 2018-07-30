@@ -6,6 +6,7 @@ Created on Jun 23, 2017
 
 import sys
 import json
+import numpy as np
 from os.path import join
 from os import getcwd
 from collections import Counter, namedtuple
@@ -25,6 +26,9 @@ import LearningDataMissingArg
 name_embedding_size = 200
 file_name_embedding_size = 50
 type_embedding_size = 5
+
+models_dir = 'data/models/'
+results_dir = 'data/results/'
 
 Anomaly = namedtuple("Anomaly", ["message", "score"])
 
@@ -62,7 +66,7 @@ def prepare_xy_pairs(data_paths, learning_data):
 #     print("Stats: " + str(learning_data.stats))
     print("Number of x,y pairs: " + str(len(xs)))
     print("Length of x vectors: " + str(x_length))
-    return [xs, ys, code_pieces]
+    return [np.array(xs), np.array(ys), code_pieces]
 
 if __name__ == '__main__':
     # arguments (for learning new model): what --learn <name to vector file> <type to vector file> <AST node type to vector file> --trainingData <list of call data files> --validationData <list of call data files>
@@ -139,7 +143,7 @@ if __name__ == '__main__':
         history = model.fit(xs_training, ys_training, batch_size=100, epochs=10, verbose=1)
         
         time_stamp = math.floor(time.time() * 1000)
-        model.save("anomaly_detection_model_"+str(time_stamp))
+        model.save(models_dir + "anomaly_detection_model_" + str(time_stamp))
     
     time_learning_done = time.time()
     print("Time for learning (seconds): " + str(round(time_learning_done - time_start)))
@@ -195,11 +199,11 @@ if __name__ == '__main__':
             # Log the possible anomaly for future manual inspection
             poss_anomalies.append(Anomaly(message, anomaly_score))
     
-    f_inspect = open('poss_anomalies.txt', 'w+')
+    f_inspect = open(results_dir + 'poss_anomalies.txt', 'w+')
     poss_anomalies = sorted(poss_anomalies, key=lambda a: -a.score)
     for anomaly in poss_anomalies:
         f_inspect.write(anomaly.message + "\n")
-    print("Possible Anomalies written to file : poss_anomalies.txt")
+    print("Possible Anomalies written to file : " + results_dir + "poss_anomalies.txt")
     f_inspect.close()
 
     time_prediction_done = time.time()
