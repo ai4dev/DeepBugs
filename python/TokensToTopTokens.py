@@ -5,6 +5,7 @@ Created on Jul 26, 2017
 '''
 
 import sys
+import os
 import json
 from os.path import join
 from os import getcwd
@@ -12,6 +13,9 @@ from collections import Counter
 import math
 import time
 from multiprocessing import Pool
+
+root_global = os.getcwd()
+tech_files_dir = os.path.join(root_global, "data/tech/")
 
 kept_tokens = 10000
 
@@ -32,7 +36,8 @@ class RawDataReader(object):
 def analyze_histograms(all_tokens):
     total = sum(all_tokens.values())
     sorted_pairs = all_tokens.most_common()
-    percentages_to_cover = list(map(lambda x: x/100.0,range(1,100)))  #[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.99]
+    percentages_to_cover = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.99]
+    # percentages_to_cover = list(map(lambda x: x/100.0,range(1,100)))
     nb_covered = 0
     pairs_covered = 0
     for pair in sorted_pairs:
@@ -55,16 +60,16 @@ def analyze_histograms(all_tokens):
     print("----")
     print(str(covered_by_kept_tokens) + " most frequent terms cover " + str(perc_covered_by_kept_tokens) + " of all terms")
 
-def save_tokens(encoded_tokens):
+def save_tokens(encoded_tokens, prefix):
     time_stamp = math.floor(time.time() * 1000)
-    file_name = "encoded_tokens_" + str(time_stamp) + ".json"
+    file_name = os.path.join(tech_files_dir, "encoded_tokens_" + prefix + "_" + str(time_stamp) + ".json")
     with open(file_name, "w") as file:
         json.dump(encoded_tokens, file, indent=4)
     return file_name
 
-def save_token_numbers(token_to_number):
+def save_token_numbers(token_to_number, prefix):
     time_stamp = math.floor(time.time() * 1000)
-    file_name = "token_to_number_" + str(time_stamp) + ".json"
+    file_name = os.path.join(tech_files_dir, "token_to_number_" + prefix + "_" + str(time_stamp) + ".json")
     with open(file_name, 'w') as file:
         json.dump(token_to_number, file, sort_keys=True, indent=4)
 
@@ -88,9 +93,10 @@ def chunks(li, n):
         yield li[i:i + n]
 
 if __name__ == '__main__':
-    # arguments: <list of .json files with tokens> 
-    
-    all_raw_data_paths = list(map(lambda f: join(getcwd(), f), sys.argv[1:]))
+    # arguments: <list of .json files with tokens>
+
+    prefix = sys.argv[1]
+    all_raw_data_paths = list(map(lambda f: join(getcwd(), f), sys.argv[2:]))
     print("Total files: "+str(len(all_raw_data_paths))) 
   
     # gather tokens (in parallel)
@@ -126,7 +132,7 @@ if __name__ == '__main__':
     # replace infrequent tokens w/ placeholder and write number-encoded tokens + contexts to files
     frequent_tokens = frequent_tokens(all_tokens, kept_tokens)
     
-    save_token_numbers(frequent_tokens)
+    save_token_numbers(frequent_tokens, prefix)
 
     # parallelize the encoding
     def encode_tokens(data_paths):
@@ -144,12 +150,12 @@ if __name__ == '__main__':
             
             # occasionally save and forget (to avoid filling up all memory)
             if token_ctr > 1000000:
-                file_name = save_tokens(all_encoded_seqs)
+                file_name = save_tokens(all_encoded_seqs, prefix)
                 print("Have written data to " + file_name)
                 token_ctr = 0
                 all_encoded_seqs = []
             
-        file_name = save_tokens(all_encoded_seqs)
+        file_name = save_tokens(all_encoded_seqs, prefix)
         print("Have written data to " + file_name)
     
     print("Encoding data and written it to files...")

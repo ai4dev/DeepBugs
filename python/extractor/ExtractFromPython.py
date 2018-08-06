@@ -102,7 +102,10 @@ if __name__ == '__main__':
     resulting_json = []
 
     for file in python_files:
-        resulting_json.append({'path': file, 'tokens': utils.get_tokens(file)})
+        # resulting_json.append({'path': file, 'tokens': utils.get_tokens(file)})
+        res = utils.get_tokens(file)
+        if res is not None:
+            resulting_json.append(res)
 
     with open(get_file_from_template(args.target, args.prefix), 'w') as fout:
         json.dump(resulting_json, fout, indent=4, separators=(',', ': '))

@@ -5,6 +5,7 @@ Created on Jun 30, 2017
 '''
 
 import sys
+import os
 import json
 from os.path import join
 from os import getcwd
@@ -13,6 +14,9 @@ import math
 import numpy as np
 import time
 from multiprocessing import Pool
+
+root_global = os.getcwd()
+tech_files_dir = os.path.join(root_global, "data/tech/")
 
 kept_main_tokens = 10000
 kept_context_tokens = 1000
@@ -52,22 +56,22 @@ def analyze_histograms(all_tokens):
             else:
                 done = True
 
-def save_tokens_with_context(encoded_tokens_with_context):
+def save_tokens_with_context(encoded_tokens_with_context, prefix):
     all_data = np.asarray(encoded_tokens_with_context)
     
     time_stamp = math.floor(time.time() * 1000)
-    file_name = "encoded_tokens_with_context_" + str(time_stamp) + ".npy"
+    file_name = os.path.join(tech_files_dir, "encoded_tokens_with_context_" + prefix + "_" +  str(time_stamp) + ".npy")
     np.save(file_name, all_data)
     return file_name
 
-def save_token_numbers(token_to_number):
+def save_token_numbers(token_to_number, prefix):
     time_stamp = math.floor(time.time() * 1000)
-    file_name = "token_to_number_" + str(time_stamp) + ".json"
+    file_name = os.path.join(tech_files_dir, "token_to_number_" + prefix + "_" + str(time_stamp) + ".json")
     with open(file_name, 'w') as file:
         json.dump(token_to_number, file, sort_keys=True, indent=4)
 
 unknown = "@@~UNKNOWN~@@" # represented by 0
-def frequent_tokens(counter, nb_tokens): 
+def frequent_tokens(counter, nb_tokens):
     token_to_number = dict()
     ctr = 1 # reserve 0 for "unknown"
     for pair in counter.most_common(nb_tokens):
@@ -87,8 +91,9 @@ def chunks(li, n):
 
 if __name__ == '__main__':
     # arguments: <list of .json files with tokens and contexts> 
-    
-    all_raw_data_paths = list(map(lambda f: join(getcwd(), f), sys.argv[1:]))
+
+    prefix = sys.argv[1]
+    all_raw_data_paths = list(map(lambda f: join(getcwd(), f), sys.argv[2:]))
     print("Total files: "+str(len(all_raw_data_paths))) 
   
     # gather tokens (in parallel)
@@ -134,7 +139,7 @@ if __name__ == '__main__':
     frequent_main_tokens = frequent_tokens(all_main_tokens, kept_main_tokens)
     frequent_context_tokens = frequent_tokens(all_context_tokens, kept_context_tokens)
     
-    save_token_numbers(frequent_main_tokens)
+    save_token_numbers(frequent_main_tokens, prefix)
 
     # parallelize the encoding
     def encode_tokens_with_context(data_paths):
@@ -162,12 +167,12 @@ if __name__ == '__main__':
                 
                     # occasionally save and forget (to avoid filling up all memory)
                     if len(encoded_tokens_with_context) % 1000000 is 0:
-                        file_name = save_tokens_with_context(encoded_tokens_with_context)
+                        file_name = save_tokens_with_context(encoded_tokens_with_context, prefix)
                         print("Have written data to " + file_name)
             
                         encoded_tokens_with_context = []
             
-        file_name = save_tokens_with_context(encoded_tokens_with_context)
+        file_name = save_tokens_with_context(encoded_tokens_with_context, prefix)
         print("Have written data to " + file_name)
     
     print("Encoding data and written it to files...")

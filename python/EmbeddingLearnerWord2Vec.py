@@ -12,6 +12,9 @@ import time
 import json
 from gensim.models import Word2Vec
 
+root_global = getcwd()
+tech_files_dir = join(root_global, "data/tech/")
+
 nb_tokens_in_context = 20
 kept_tokens = 10000
 
@@ -31,9 +34,10 @@ class EncodedSequenceReader(object):
 
 if __name__ == '__main__':
     # arguments: <token_to_nb_file> <list of .json files with tokens>
-    
-    token_to_nb_file = sys.argv[1]
-    data_paths = list(map(lambda f: join(getcwd(), f), sys.argv[2:]))
+
+    prefix = sys.argv[1]
+    token_to_nb_file = sys.argv[2]
+    data_paths = list(map(lambda f: join(getcwd(), f), sys.argv[3:]))
     if len(data_paths) is 0:
         print("Must pass token_to_nb files and at least one data file")
         sys.exit(1)
@@ -43,7 +47,7 @@ if __name__ == '__main__':
 
     # store the model
     time_stamp = math.floor(time.time() * 1000)
-    model.save("embedding_model_" + str(time_stamp))
+    model.save(join(tech_files_dir, "embedding_model_" + prefix + "_" + str(time_stamp)))
 
     # after training the model, write token-to-vector map (= learned embedding) to file
     with open(token_to_nb_file, "r") as file:
@@ -53,7 +57,7 @@ if __name__ == '__main__':
         if token.startswith("ID:") or token.startswith("LIT:"):
             vector = model[token].tolist()
             token_to_vector[token] = vector
-    token_to_vector_file_name = "token_to_vector_" + str(time_stamp) + ".json"
+    token_to_vector_file_name = join(tech_files_dir, "token_to_vector_" + prefix + "_" + str(time_stamp) + ".json")
     with open(token_to_vector_file_name, "w") as file:
         json.dump(token_to_vector, file, sort_keys=True, indent=4)
        
