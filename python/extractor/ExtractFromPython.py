@@ -7,6 +7,8 @@ Created on 31.07.18
 import argparse
 import os
 import json
+import time
+import ExtractorUtils as utils
 
 usage = """
 Correct usage:
@@ -42,6 +44,11 @@ supported_targets = ["tokens", "calls", "assignments", "callsMissingArg", "binOp
 root_global = os.getcwd()
 tech_files_dir = os.path.join(root_global, "data/tech/")
 file_to_id_filename = os.path.join(tech_files_dir, "fileIDs.json")
+tech_file_template = '{}_{}_{}.json'
+
+
+def get_file_from_template(what, prefix):
+    return os.path.join(tech_files_dir, tech_file_template.format(what, prefix, int(time.time())))
 
 
 def get_file_to_id(files):
@@ -91,4 +98,11 @@ if __name__ == '__main__':
             python_files = list(filter(lambda fname: fname in files_to_consider, python_files))
             print("{} files left".format(len(python_files)))
 
-    get_file_to_id(python_files)
+    file_to_id = get_file_to_id(python_files)
+    resulting_json = []
+
+    for file in python_files:
+        resulting_json.append({'path': file, 'tokens': utils.get_tokens(file)})
+
+    with open(get_file_from_template(args.target, args.prefix), 'w') as fout:
+        json.dump(resulting_json, fout, indent=4, separators=(',', ': '))
