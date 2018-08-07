@@ -12,7 +12,7 @@ if __name__ == '__main__':
     model = Word2Vec.load(sys.argv[1])
     
     queries_js = [ "ID:i", "ID:name", "ID:jQuery", "ID:counter", "ID:element", "LIT:true", "ID:msg", "ID:length", "ID:nextSibling", "ID:toLowerCase", "ID:wrapper", "ID:width", "ID:getWidth"]
-    queries_py = [ "ID:i", "ID:name", "ID:counter", "ID:element", "LIT:true", "ID:msg", "ID:length", "ID:wrapper", "ID:width"]
+    queries_py = [ "ID:i", "ID:name", "ID:counter", "ID:element", "STD:-", "ID:True", "ID:msg", "ID:length", "ID:wrapper", "ID:width"]
 
     for query in queries_py:
         results = model.wv.most_similar(positive=[query])
