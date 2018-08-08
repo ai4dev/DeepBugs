@@ -8,6 +8,7 @@ from io import BytesIO
 from tokenize import tokenize, NUMBER, NAME, OP, STRING, AWAIT, ASYNC
 from ast import Num, Str, Bytes, Name, Starred, NameConstant, Attribute, Subscript, FormattedValue, Expr, UnaryOp, \
     BinOp, BoolOp, Compare, Call, Lambda
+import asttokens
 
 standard_string = 'STD:{}'
 literal_string = 'LIT:{}'
@@ -39,6 +40,19 @@ def get_tokens(file, resulting_json):
     resulting_json.append(result)
 
 
+def num_to_padded_str(num, length):
+    str_num = str(num)
+    while len(str_num) < length:
+        str_num = '0' + str_num
+    return str_num
+
+
+def get_location_of_ast_node(node):
+    start, end = node.first_token.startpos, node.last_token.endpos
+    diff = end - start
+    return num_to_padded_str(start, 6) + num_to_padded_str(diff, 4)
+
+
 def get_name_of_ast_node(node):
     if type(node) is Num:
         return literal_string.format(node.n)
@@ -58,7 +72,7 @@ def get_name_of_ast_node(node):
     if type(node) is UnaryOp:
         return get_name_of_ast_node(node.operand)
     if type(node) is BinOp or \
-            type(node is Compare):
+            type(node) is Compare:
         return get_name_of_ast_node(node.left)
     if type(node) is BoolOp:
         return get_name_of_ast_node(node.values[0])
@@ -66,4 +80,8 @@ def get_name_of_ast_node(node):
         return get_name_of_ast_node(node.func)
     if type(node) is Lambda:
         return identifier_string.format("lambda")
+    return None
+
+
+def get_type_of_ast_node(node):
     return 'unknown'

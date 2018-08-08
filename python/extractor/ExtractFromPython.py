@@ -107,8 +107,7 @@ if __name__ == '__main__':
         if args.target == 'tokens':
             utils.get_tokens(file, resulting_json)
         elif args.target == 'calls':
-            extract_calls(file, resulting_json)
-
+            extract_calls(file, file_to_id[file], resulting_json)
 
     with open(get_file_from_template(args.target, args.prefix), 'w') as fout:
         json.dump(resulting_json, fout, indent=4, separators=(',', ': '))
