@@ -74,6 +74,10 @@ def get_file_to_id(files):
     return file_to_id
 
 
+def save_file(json_to_save):
+    with open(get_file_from_template(args.target, args.prefix), 'w') as fout:
+        json.dump(json_to_save, fout, indent=4, separators=(',', ': '))
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('target', help='extracted information, one of: \'calls\'')
@@ -102,12 +106,13 @@ if __name__ == '__main__':
     file_to_id = get_file_to_id(python_files)
     resulting_json = []
 
-    for file in python_files:
+    for i, file in enumerate(python_files):
         # resulting_json.append({'path': file, 'tokens': utils.get_tokens(file)})
         if args.target == 'tokens':
             utils.get_tokens(file, resulting_json)
         elif args.target == 'calls':
             extract_calls(file, file_to_id[file], resulting_json)
-
-    with open(get_file_from_template(args.target, args.prefix), 'w') as fout:
-        json.dump(resulting_json, fout, indent=4, separators=(',', ': '))
+        if (i + 1) % 5000 == 0:
+            save_file(resulting_json)
+            resulting_json = []
+    save_file(resulting_json)
