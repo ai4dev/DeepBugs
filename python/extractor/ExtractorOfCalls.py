@@ -6,9 +6,10 @@ Created on 06.08.18
 
 
 import ast
-from ast import Attribute, Name
-from ExtractorUtils import identifier_string, get_name_of_ast_node, get_location_of_ast_node, get_type_of_ast_node
+from ast import Attribute, Name, Subscript
+from ExtractorUtils import identifier_string, get_name_of_ast_node, get_location_of_ast_node, get_type_of_ast_node, get_base_of_ast_node
 import asttokens
+from tokenize import TokenError
 
 
 max_length_of_callee_and_args = 200
@@ -20,7 +21,6 @@ class FunctionDefinitionCollector(ast.NodeVisitor):
         self.function_to_parameters = function_to_parameters
 
     def visit_FunctionDef(self, node):
-        print("I've visited function {}".format(node.name))
         name = identifier_string.format(node.name)
         if name not in self.function_to_parameters and len(node.args.args) > 1:
             args = []
@@ -46,10 +46,10 @@ class CallsCollector(ast.NodeVisitor):
         base = ""
         callee_node = node.func
         callee = get_name_of_ast_node(callee_node)
-        if type(callee_node) is Attribute:
-            base = get_name_of_ast_node(callee_node.value)
-        elif type(callee_node) is not Name:
-            print("ERROR! ERROR!")
+        base = get_base_of_ast_node(callee_node)
+        if base is None or callee is None:
+            self.generic_visit(node)
+            return
 
         callee_location = self.file_id + get_location_of_ast_node(callee_node)
 
@@ -90,8 +90,19 @@ class CallsCollector(ast.NodeVisitor):
 
 
 def extract_calls(file, file_id, resulting_json):
+    print("Extracting from {}".format(file))
     with open(file) as fin:
-        atok = asttokens.ASTTokens(fin.read(), parse=True, filename=file)
+        try:
+            atok = asttokens.ASTTokens(fin.read(), parse=True, filename=file)
+        except SyntaxError:
+            print("Unable to extract from {}, incompatible python version".format(file))
+            return
+        except ValueError:
+            print("Unable to extract from {}, failed to extract tokens".format(file))
+            return
+        except TokenError:
+            print("Unable to extract from {}, failed with tokenizing".format(file))
+            return
         tree = atok.tree
         function_to_parameters = {}
         FunctionDefinitionCollector(function_to_parameters).visit(tree)

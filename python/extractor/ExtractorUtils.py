@@ -83,5 +83,13 @@ def get_name_of_ast_node(node):
     return None
 
 
+def get_base_of_ast_node(node):
+    if type(node) is Attribute:
+        return get_name_of_ast_node(node.value)
+    elif type(node) is Subscript:
+        return get_base_of_ast_node(node.value)
+    return ""
+
+
 def get_type_of_ast_node(node):
     return 'unknown'
