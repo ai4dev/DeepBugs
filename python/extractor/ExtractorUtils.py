@@ -7,7 +7,7 @@ Created on 31.07.18
 from io import BytesIO
 from tokenize import tokenize, NUMBER, NAME, OP, STRING, AWAIT, ASYNC
 from ast import Num, Str, Bytes, Name, Starred, NameConstant, Attribute, Subscript, FormattedValue, Expr, UnaryOp, \
-    BinOp, BoolOp, Compare, Call, Lambda
+    BinOp, BoolOp, Compare, Call, Lambda, USub
 import asttokens
 
 standard_string = 'STD:{}'
@@ -27,15 +27,21 @@ def get_tokens(file, resulting_json):
             except UnicodeDecodeError:
                 return
 
+        last = (-1, "")
         for toknum, tokval, _, _, _ in tokens:
             if toknum in [OP, AWAIT, ASYNC]:
                 result.append(standard_string.format(tokval))
             elif toknum == NUMBER:
-                result.append(literal_string.format(tokval))
+                if last == (OP, "-"):
+                    result.pop(-1)
+                    result.append(literal_string.format("-" + tokval))
+                else:
+                    result.append(literal_string.format(tokval))
             elif toknum == STRING:
                 result.append(literal_string.format(tokval[1:-1]))
             elif toknum == NAME:
                 result.append(identifier_string.format(tokval))
+            last = (toknum, tokval)
 
     resulting_json.append(result)
 
@@ -70,6 +76,8 @@ def get_name_of_ast_node(node):
             type(node) is Expr:
         return get_name_of_ast_node(node.value)
     if type(node) is UnaryOp:
+        if type(node.op) is USub and type(node.operand) is Num:
+            return literal_string.format(-node.operand.n)
         return get_name_of_ast_node(node.operand)
     if type(node) is BinOp or \
             type(node) is Compare:
