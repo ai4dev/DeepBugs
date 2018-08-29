@@ -17,7 +17,7 @@ from multiprocessing import Pool
 root_global = os.getcwd()
 tech_files_dir = os.path.join(root_global, "data/tech/")
 
-kept_tokens = 10000
+kept_tokens = 50000
 
 nb_processes = 30
 
@@ -61,14 +61,14 @@ def analyze_histograms(all_tokens):
     print(str(covered_by_kept_tokens) + " most frequent terms cover " + str(perc_covered_by_kept_tokens) + " of all terms")
 
 def save_tokens(encoded_tokens, prefix):
-    time_stamp = math.floor(time.time() * 1000)
+    time_stamp = math.floor(time.time() * 1000000)
     file_name = os.path.join(tech_files_dir, "encoded_tokens_" + prefix + "_" + str(time_stamp) + ".json")
     with open(file_name, "w") as file:
         json.dump(encoded_tokens, file, indent=4)
     return file_name
 
 def save_token_numbers(token_to_number, prefix):
-    time_stamp = math.floor(time.time() * 1000)
+    time_stamp = math.floor(time.time() * 1000000)
     file_name = os.path.join(tech_files_dir, "token_to_number_" + prefix + "_" + str(time_stamp) + ".json")
     with open(file_name, 'w') as file:
         json.dump(token_to_number, file, sort_keys=True, indent=4)

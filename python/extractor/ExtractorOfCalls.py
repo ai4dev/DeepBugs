@@ -6,7 +6,6 @@ Created on 06.08.18
 
 
 import ast
-from ast import Attribute, Name, Subscript
 from ExtractorUtils import identifier_string, get_name_of_ast_node, get_location_of_ast_node, get_type_of_ast_node, get_base_of_ast_node
 import asttokens
 from tokenize import TokenError

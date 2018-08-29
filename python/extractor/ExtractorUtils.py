@@ -7,12 +7,21 @@ Created on 31.07.18
 from io import BytesIO
 from tokenize import tokenize, NUMBER, NAME, OP, STRING, AWAIT, ASYNC
 from ast import Num, Str, Bytes, Name, Starred, NameConstant, Attribute, Subscript, FormattedValue, Expr, UnaryOp, \
-    BinOp, BoolOp, Compare, Call, Lambda, USub
+    BinOp, BoolOp, Compare, Call, Lambda, USub, Not, Index
 import asttokens
 
 standard_string = 'STD:{}'
 literal_string = 'LIT:{}'
 identifier_string = 'ID:{}'
+
+class NodeTypes:
+    number = "num"
+    string = "string"
+    bytes = "bytes"
+    true = "true"
+    false = "false"
+    none = "none"
+    unknown = "unknown"
 
 
 def get_tokens(file, resulting_json):
@@ -73,7 +82,8 @@ def get_name_of_ast_node(node):
     if type(node) is Subscript or \
             type(node) is FormattedValue or \
             type(node) is Starred or \
-            type(node) is Expr:
+            type(node) is Expr or \
+            type(node) is Index:
         return get_name_of_ast_node(node.value)
     if type(node) is UnaryOp:
         if type(node.op) is USub and type(node.operand) is Num:
@@ -81,9 +91,9 @@ def get_name_of_ast_node(node):
         return get_name_of_ast_node(node.operand)
     if type(node) is BinOp or \
             type(node) is Compare:
-        return get_name_of_ast_node(node.left)
+        return None
     if type(node) is BoolOp:
-        return get_name_of_ast_node(node.values[0])
+        return None
     if type(node) is Call:
         return get_name_of_ast_node(node.func)
     if type(node) is Lambda:
@@ -100,4 +110,29 @@ def get_base_of_ast_node(node):
 
 
 def get_type_of_ast_node(node):
-    return 'unknown'
+    if type(node) is Num:
+        return NodeTypes.number
+    if type(node) is Str:
+        return NodeTypes.string
+    if type(node) is Bytes:
+        return NodeTypes.bytes
+    if type(node) is NameConstant:
+        if node.value == 'True':
+            return NodeTypes.true
+        elif node.value == 'False':
+            return NodeTypes.false
+        elif node.value == 'None':
+            return NodeTypes.none
+        return NodeTypes.unknown
+    if type(node) is Index:
+        return get_type_of_ast_node(node.value)
+    if type(node) is UnaryOp:
+        if type(node.op) is Not:
+            operand_type = get_type_of_ast_node(node.operand)
+            if operand_type == NodeTypes.false:
+                return NodeTypes.true
+            if operand_type == NodeTypes.true:
+                return NodeTypes.false
+            return NodeTypes.unknown
+        return get_type_of_ast_node(node.operand)
+    return NodeTypes.unknown
