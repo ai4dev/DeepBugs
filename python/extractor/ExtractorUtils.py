@@ -19,12 +19,16 @@ identifier_string = 'ID:{}'
 
 
 class NodeTypes:
-    number = "num"
+    number = "number"
     string = "string"
-    bytes = "bytes"
-    true = "true"
-    false = "false"
-    none = "none"
+    # bytes = "bytes"
+    bytes = "string"
+    # true = "true"
+    # false = "false"
+    true = "boolean"
+    false = "boolean"
+    # none = "none"
+    none = "null"
     unknown = "unknown"
 
 
