@@ -7,12 +7,16 @@ Created on 31.07.18
 from io import BytesIO
 from tokenize import tokenize, NUMBER, NAME, OP, STRING, AWAIT, ASYNC
 from ast import Num, Str, Bytes, Name, Starred, NameConstant, Attribute, Subscript, FormattedValue, Expr, UnaryOp, \
-    BinOp, BoolOp, Compare, Call, Lambda, USub, Not, Index
+    BinOp, BoolOp, Compare, Call, Lambda, USub, Not, Index, \
+    Add, Sub, Mult, Div, FloorDiv, Mod, Pow, LShift, RShift, BitOr, BitXor, BitAnd, MatMult, \
+    Eq, NotEq, Lt, LtE, Gt, GtE, Is, IsNot, In, NotIn
+
 import asttokens
 
 standard_string = 'STD:{}'
 literal_string = 'LIT:{}'
 identifier_string = 'ID:{}'
+
 
 class NodeTypes:
     number = "num"
@@ -99,6 +103,57 @@ def get_name_of_ast_node(node):
     if type(node) is Lambda:
         return identifier_string.format("lambda")
     return None
+
+
+def get_operation_token(op):
+    if type(op) is Add:
+        return '+'
+    elif type(op) is Sub:
+        return '-'
+    elif type(op) is Mult:
+        return '*'
+    elif type(op) is Div:
+        return '/'
+    elif type(op) is FloorDiv:
+        return '//'
+    elif type(op) is Mod:
+        return '%'
+    elif type(op) is Pow:
+        return '**'
+    elif type(op) is LShift:
+        return '<<'
+    elif type(op) is RShift:
+        return '>>'
+    elif type(op) is BitOr:
+        return '|'
+    elif type(op) is BitXor:
+        return '^'
+    elif type(op) is BitAnd:
+        return '&'
+    elif type(op) is MatMult:
+        return '@'
+    elif type(op) is Eq:
+        return '=='
+    elif type(op) is NotEq:
+        return '!='
+    elif type(op) is Lt:
+        return '<'
+    elif type(op) is LtE:
+        return '<='
+    elif type(op) is Gt:
+        return '>'
+    elif type(op) is GtE:
+        return '>='
+    elif type(op) is Is:
+        return 'is'
+    elif type(op) is IsNot:
+        return 'is not'
+    elif type(op) is In:
+        return 'in'
+    elif type(op) is NotIn:
+        return 'not in'
+    return None
+
 
 
 def get_base_of_ast_node(node):

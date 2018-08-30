@@ -10,6 +10,7 @@ import json
 import time
 import ExtractorUtils as utils
 from ExtractorOfCalls import extract_calls
+from ExtractorOfBinOps import extract_bin_ops
 
 usage = """
 Correct usage:
@@ -112,6 +113,8 @@ if __name__ == '__main__':
             utils.get_tokens(file, resulting_json)
         elif args.target == 'calls':
             extract_calls(file, file_to_id[file], resulting_json)
+        elif args.target == 'binOps':
+            extract_bin_ops(file, file_to_id[file], resulting_json)
         if (i + 1) % 5000 == 0:
             save_file(resulting_json)
             resulting_json = []
