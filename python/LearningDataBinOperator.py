@@ -33,6 +33,7 @@ class LearningData(object):
         for bin_op in Util.DataReader(validation_data_paths):
             all_operators_set.add(bin_op["op"])
         self.all_operators = list(all_operators_set)
+        return self.all_operators
     
     def code_to_xy_pairs(self, bin_op, xs, ys, name_to_vector, type_to_vector, node_type_to_vector, code_pieces):
         left = bin_op["left"]

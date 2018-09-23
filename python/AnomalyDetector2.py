@@ -117,8 +117,17 @@ if __name__ == '__main__':
         sys.exit(1)
     
     print("Statistics on training data:")
-    learning_data.pre_scan(training_data_paths, validation_data_paths)
-    
+    if what == "BinOperator":
+        all_operators = learning_data.pre_scan(training_data_paths, validation_data_paths)
+        embeddings = {}
+        for i, operator in enumerate(all_operators):
+            embeddings[operator] = [0] * len(all_operators)
+            embeddings[operator][i] = 1
+        with open(join(getcwd(), "operator_to_vector.json"), "w") as file:
+            json.dump(embeddings, file, sort_keys=True, indent=4)
+    else:
+        learning_data.pre_scan(training_data_paths, validation_data_paths)
+
     # prepare x,y pairs for learning and validation
     print("Preparing xy pairs for training data:")
     xs_training, ys_training, _ = prepare_xy_pairs(training_data_paths, learning_data)
@@ -129,7 +138,7 @@ if __name__ == '__main__':
     if option == "--load":
         model = load_model(model_file)
         print("Loaded model.")
-    elif option == "--learn": 
+    elif option == "--learn":
         # simple feedforward network
         model = Sequential()
         model.add(Dropout(0.2, input_shape=(x_length,)))
@@ -137,14 +146,14 @@ if __name__ == '__main__':
         model.add(Dropout(0.2))
         #model.add(Dense(200, activation="relu"))
         model.add(Dense(1, activation="sigmoid", kernel_initializer='normal'))
-     
+
         # train
         model.compile(loss='binary_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
         history = model.fit(xs_training, ys_training, batch_size=100, epochs=10, verbose=1)
-        
+
         time_stamp = math.floor(time.time() * 1000)
-        model.save(models_dir + "anomaly_detection_model_" + str(time_stamp))
-    
+        model.save(models_dir + "anomaly_detection_model_" + str(time_stamp) + ".h5")
+
     time_learning_done = time.time()
     print("Time for learning (seconds): " + str(round(time_learning_done - time_start)))
     
