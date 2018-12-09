@@ -9,7 +9,8 @@ from collections import Counter
 import random
 
 type_embedding_size = 5
-node_type_embedding_size = 8 # if changing here, then also change in LearningDataBinOperator
+node_type_embedding_size = 14 # if changing here, then also change in LearningDataBinOperator
+operator_embedding_size = 26
 
 class CodePiece(object):
     def __init__(self, left, right, op, src):
@@ -35,7 +36,7 @@ class LearningData(object):
         self.all_operators = list(all_operators_set)
         return self.all_operators
     
-    def code_to_xy_pairs(self, bin_op, xs, ys, name_to_vector, type_to_vector, node_type_to_vector, code_pieces):
+    def code_to_xy_pairs(self, bin_op, xs, ys, name_to_vector, type_to_vector, node_type_to_vector, operator_to_vector, code_pieces):
         left = bin_op["left"]
         right = bin_op["right"]
         operator = bin_op["op"]
@@ -51,15 +52,17 @@ class LearningData(object):
     
         left_vector = name_to_vector[left]
         right_vector = name_to_vector[right]
-        operator_vector = [0] * len(self.all_operators)
-        operator_vector[self.all_operators.index(operator)] = 1
+        #operator_vector = [0] * len(self.all_operators)
+        #operator_vector[self.all_operators.index(operator)] = 1
+        operator_vector = operator_to_vector.get(left_type, [0]*operator_embedding_size)
         left_type_vector = type_to_vector.get(left_type, [0]*type_embedding_size)
         right_type_vector = type_to_vector.get(right_type, [0]*type_embedding_size)
         parent_vector = node_type_to_vector[parent]
         grand_parent_vector = node_type_to_vector[grand_parent]
         
         # for all xy-pairs: y value = probability that incorrect
-        x_correct = left_vector + right_vector + operator_vector + left_type_vector + right_type_vector + parent_vector + grand_parent_vector
+        x_correct = left_vector + right_vector + operator_vector + left_type_vector + right_type_vector + \
+                    parent_vector + grand_parent_vector
         y_correct = [0]
         xs.append(x_correct)
         ys.append(y_correct)
@@ -70,10 +73,10 @@ class LearningData(object):
         while other_operator_vector == None:
             other_operator = random.choice(self.all_operators)
             if other_operator != operator:
-                other_operator_vector = [0] * len(self.all_operators)
-                other_operator_vector[self.all_operators.index(other_operator)] = 1
+                other_operator_vector = operator_to_vector.get(left_type, [0] * operator_embedding_size)
         
-        x_incorrect = left_vector + right_vector + other_operator_vector + left_type_vector + right_type_vector + parent_vector + grand_parent_vector
+        x_incorrect = left_vector + right_vector + other_operator_vector + left_type_vector + right_type_vector + \
+                      parent_vector + grand_parent_vector
         y_incorrect = [1]
         xs.append(x_incorrect)
         ys.append(y_incorrect)

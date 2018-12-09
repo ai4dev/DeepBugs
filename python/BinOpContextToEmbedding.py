@@ -13,7 +13,8 @@ import random
 
 import Util
 
-node_type_embedding_size = 8 # if changing here, then also change in LearningDataBinOperator
+node_type_embedding_size = 14 # if changing here, then also change in LearningDataBinOperator
+
 
 def create_random_embedding(size, used_embeddings):
     while True:
@@ -42,6 +43,3 @@ if __name__ == '__main__':
     node_type_to_vector_file = "node_type_to_vector_" + str(time_stamp) + ".json"
     with open(node_type_to_vector_file, "w") as file:
         json.dump(node_type_to_vector, file, sort_keys=True, indent=4)
-    
-    
-    

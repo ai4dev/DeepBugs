@@ -1,17 +1,19 @@
 '''
 Created on 31.07.18
-
 @author: Egor Bogomolov
 '''
 
 from io import BytesIO
-from tokenize import tokenize, NUMBER, NAME, OP, STRING, AWAIT, ASYNC
-from ast import Num, Str, Bytes, Name, Starred, NameConstant, Attribute, Subscript, FormattedValue, Expr, UnaryOp, \
+from io import StringIO
+from tokenize import tokenize, NUMBER, NAME, OP, STRING, generate_tokens, TokenError
+from ast import Num, Str, Name, Attribute, Subscript, Expr, UnaryOp, \
     BinOp, BoolOp, Compare, Call, Lambda, USub, Not, Index, \
-    Add, Sub, Mult, Div, FloorDiv, Mod, Pow, LShift, RShift, BitOr, BitXor, BitAnd, MatMult, \
-    Eq, NotEq, Lt, LtE, Gt, GtE, Is, IsNot, In, NotIn
+    Add, Sub, Mult, Div, FloorDiv, Mod, Pow, LShift, RShift, BitOr, BitXor, BitAnd, \
+    Eq, NotEq, Lt, LtE, Gt, GtE, Is, IsNot, In, NotIn, Mod
+import os.path
 
-import asttokens
+#import asttokens
+from asttokens import ASTTokens
 
 standard_string = 'STD:{}'
 literal_string = 'LIT:{}'
@@ -21,32 +23,30 @@ identifier_string = 'ID:{}'
 class NodeTypes:
     number = "number"
     string = "string"
-    # bytes = "bytes"
-    bytes = "string"
-    # true = "true"
-    # false = "false"
     true = "boolean"
     false = "boolean"
-    # none = "none"
-    none = "null"
+    object = "object"
+    none = "none"
     unknown = "unknown"
-
+    lambdaexpr = "lambda"
 
 def get_tokens(file, resulting_json):
     result = []
+
     with open(file) as fin:
         print("Collecting from {}".format(file))
         try:
-            tokens = tokenize(BytesIO(fin.read().encode('utf-8')).readline)
+            tokens = generate_tokens(BytesIO(fin.read().encode('utf-8')).readline)
         except UnicodeDecodeError:
             try:
-                tokens = tokenize(BytesIO(fin.read().encode('cp1252')).readline)
+                tokens = generate_tokens(BytesIO(fin.read().encode("cp1252")).readline)
             except UnicodeDecodeError:
                 return
-
+        if tokens is None:
+            return
         last = (-1, "")
         for toknum, tokval, _, _, _ in tokens:
-            if toknum in [OP, AWAIT, ASYNC]:
+            if toknum == OP:
                 result.append(standard_string.format(tokval))
             elif toknum == NUMBER:
                 if last == (OP, "-"):
@@ -58,8 +58,9 @@ def get_tokens(file, resulting_json):
                 result.append(literal_string.format(tokval[1:-1]))
             elif toknum == NAME:
                 result.append(identifier_string.format(tokval))
+            else:
+                result.append(standard_string.format(tokval))
             last = (toknum, tokval)
-
     resulting_json.append(result)
 
 
@@ -77,36 +78,37 @@ def get_location_of_ast_node(node):
 
 
 def get_name_of_ast_node(node):
-    if type(node) is Num:
-        return literal_string.format(node.n)
-    if type(node) is Str or type(node) is Bytes:
-        return literal_string.format(node.s)
-    if type(node) is Name:
-        return identifier_string.format(node.id)
-    if type(node) is NameConstant:
-        return literal_string.format(node.value)
-    if type(node) is Attribute:
-        return identifier_string.format(node.attr)
-    if type(node) is Subscript or \
-            type(node) is FormattedValue or \
-            type(node) is Starred or \
-            type(node) is Expr or \
-            type(node) is Index:
-        return get_name_of_ast_node(node.value)
-    if type(node) is UnaryOp:
-        if type(node.op) is USub and type(node.operand) is Num:
-            return literal_string.format(-node.operand.n)
-        return get_name_of_ast_node(node.operand)
-    if type(node) is BinOp or \
-            type(node) is Compare:
+    try:
+        if type(node) is Num:
+            return literal_string.format(node.n)
+        if type(node) is Str:
+            return literal_string.format(node.s.decode('utf-8'))
+        if type(node) is Name:
+            return identifier_string.format(node.id.decode('utf-8'))
+        if type(node) is Attribute:
+            return identifier_string.format(node.attr.decode('utf-8'))
+        if type(node) is Subscript or \
+                type(node) is Expr or \
+                type(node) is Index:
+            return get_name_of_ast_node(node.value)
+        if type(node) is UnaryOp:
+            if type(node.op) is USub and type(node.operand) is Num:
+                return literal_string.format(-node.operand.n)
+            return get_name_of_ast_node(node.operand)
+        if type(node) is BinOp or \
+                type(node) is Compare:
+            return None
+        if type(node) is BoolOp:
+            return None
+        if type(node) is Call:
+            return get_name_of_ast_node(node.func)
+        if type(node) is Lambda:
+            return identifier_string.format("lambda")
         return None
-    if type(node) is BoolOp:
+    except UnicodeEncodeError:
         return None
-    if type(node) is Call:
-        return get_name_of_ast_node(node.func)
-    if type(node) is Lambda:
-        return identifier_string.format("lambda")
-    return None
+    except UnicodeDecodeError:
+        return None
 
 
 def get_operation_token(op):
@@ -134,8 +136,6 @@ def get_operation_token(op):
         return '^'
     elif type(op) is BitAnd:
         return '&'
-    elif type(op) is MatMult:
-        return '@'
     elif type(op) is Eq:
         return '=='
     elif type(op) is NotEq:
@@ -173,16 +173,15 @@ def get_type_of_ast_node(node):
         return NodeTypes.number
     if type(node) is Str:
         return NodeTypes.string
-    if type(node) is Bytes:
-        return NodeTypes.bytes
-    if type(node) is NameConstant:
-        if node.value == 'True':
+    if type(node) is Name:
+        if node.id == 'True':
             return NodeTypes.true
-        elif node.value == 'False':
+        elif node.id == 'False':
             return NodeTypes.false
-        elif node.value == 'None':
+        elif node.id == 'None':
             return NodeTypes.none
-        return NodeTypes.unknown
+        elif node.id == 'self':
+            return NodeTypes.object
     if type(node) is Index:
         return get_type_of_ast_node(node.value)
     if type(node) is UnaryOp:
@@ -194,4 +193,44 @@ def get_type_of_ast_node(node):
                 return NodeTypes.false
             return NodeTypes.unknown
         return get_type_of_ast_node(node.operand)
+    if type(node) is Lambda:
+        return NodeTypes.lambdaexpr
     return NodeTypes.unknown
+
+def try_to_extract(file):
+    if not os.path.isfile(file):
+        return None
+    with open(file) as fin:
+        try:
+            atok = ASTTokens(fin.read().encode('utf-8'), parse=True, filename=file)
+        except TokenError:
+            try:
+                atok = ASTTokens(fin.read().encode("cp1252"), parse=True, filename=file)
+            except TokenError:
+                print ("Unable to extract from {}".format(file))
+                return None
+        except SyntaxError:
+            try:
+                atok = ASTTokens(fin.read().encode("cp1252"), parse=True, filename=file)
+            except SyntaxError:
+                print ("Unable to extract from {}".format(file))
+                return None
+        except ValueError:
+            try:
+                atok = ASTTokens(fin.read().encode("cp1252"), parse=True, filename=file)
+            except ValueError:
+                print ("Unable to extract from {}".format(file))
+                return None
+        except IndexError:
+            try:
+                atok = ASTTokens(fin.read().encode("cp1252"), parse=True, filename=file)
+            except IndexError:
+                print ("Unable to extract from {}".format(file))
+                return None
+        except TypeError:
+            try:
+                atok = ASTTokens(fin.read().encode("cp1252"), parse=True, filename=file)
+            except TypeError:
+                print ("Unable to extract from {}".format(file))
+                return None
+    return atok.tree

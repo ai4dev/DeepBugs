@@ -24,7 +24,7 @@ class LearningData(object):
     def __init__(self):
         self.stats = {"calls": 0, "calls_with_two_args": 0, "calls_with_known_names": 0,
                       "calls_with_known_base_object": 0, "calls_with_known_types": 0,
-                      "calls_with_known_parameters" :0}
+                      "calls_with_known_parameters": 0}
     
     def pre_scan(self, training_data_paths, validation_data_paths):
         print("Stats on training data")
@@ -48,7 +48,7 @@ class LearningData(object):
         print("  " + "\n  ".join(str(x) for x in argument_to_freq.most_common(10)))
         Util.analyze_histograms(argument_to_freq)
         
-    def code_to_xy_pairs(self, call, xs, ys, name_to_vector, type_to_vector, node_type_to_vector, calls=None):
+    def code_to_xy_pairs(self, call, xs, ys, name_to_vector, type_to_vector, node_type_to_vector, operator_to_vector, calls=None):
         arguments = call["arguments"]
         self.stats["calls"] += 1
         if len(arguments) != 2:

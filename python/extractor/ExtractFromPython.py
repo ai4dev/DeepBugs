@@ -8,6 +8,7 @@ import argparse
 import os
 import json
 import time
+import glob
 import ExtractorUtils as utils
 from ExtractorOfCalls import extract_calls
 from ExtractorOfBinOps import extract_bin_ops
@@ -100,19 +101,31 @@ if __name__ == '__main__':
 
     if args.files != "all":
         with open(args.files) as fin:
-            files_to_consider = set(map(lambda fname: os.path.join(root_global, fname), fin.read().splitlines()))
+            files_to_consider = set(map(lambda fname: os.path.join(root_global, "data", "python", fname), fin.read().splitlines()))
             python_files = list(filter(lambda fname: fname in files_to_consider, python_files))
             print("{} files left".format(len(python_files)))
 
     file_to_id = get_file_to_id(python_files)
     resulting_json = []
+    if args.target == 'calls':
+        files_depth3 = glob.glob('{}/*/*'.format(root_data))
+        max_files = 3000
+        count_files = 0
+        project_dirs = filter(lambda f: os.path.isdir(f), files_depth3)
+        print("Collected {} projects".format(len(project_dirs)))
+        for project in project_dirs:
+            print project
+            project_files = filter(lambda f: (project + "/") in f, files_to_consider)
+            extract_calls(project_files, file_to_id, resulting_json)
+            count_files += len(project_files)
+            if count_files > max_files:
+                save_file(resulting_json)
+                resulting_json = []
 
     for i, file in enumerate(python_files):
         # resulting_json.append({'path': file, 'tokens': utils.get_tokens(file)})
         if args.target == 'tokens':
             utils.get_tokens(file, resulting_json)
-        elif args.target == 'calls':
-            extract_calls(file, file_to_id[file], resulting_json)
         elif args.target == 'binOps':
             extract_bin_ops(file, file_to_id[file], resulting_json)
         if (i + 1) % 5000 == 0:

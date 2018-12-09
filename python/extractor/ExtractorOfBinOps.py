@@ -5,10 +5,9 @@ Created on 29.08.18
 '''
 
 import ast
-from ExtractorUtils import get_name_of_ast_node, get_location_of_ast_node, get_type_of_ast_node, get_operation_token
+from ExtractorUtils import get_name_of_ast_node, get_location_of_ast_node, get_type_of_ast_node, get_operation_token, try_to_extract
 import asttokens
 from tokenize import TokenError
-
 
 class BinOpsCollector(ast.NodeVisitor):
 
@@ -45,6 +44,13 @@ class BinOpsCollector(ast.NodeVisitor):
         self.collect_bin_op(node, node.left, node.op, node.right)
         self.generic_visit(node)
 
+    def visit_BoolOp(self, node):
+        if len(node.values) != 2:
+            self.generic_visit(node)
+            return
+        self.collect_bin_op(node, node.values[0], node.op, node.values[1])
+        self.generic_visit(node)
+
     def visit_Compare(self, node):
         if len(node.ops) == 1:
             self.collect_bin_op(node, node.left, node.ops[0], node.comparators[0])
@@ -52,24 +58,14 @@ class BinOpsCollector(ast.NodeVisitor):
 
 
 def extract_bin_ops(file, file_id, resulting_json):
-    print("Extracting from {}".format(file))
-    with open(file) as fin:
-        try:
-            atok = asttokens.ASTTokens(fin.read(), parse=True, filename=file)
-        except SyntaxError:
-            print("Unable to extract from {}, incompatible python version".format(file))
-            return
-        except ValueError:
-            print("Unable to extract from {}, failed to extract tokens".format(file))
-            return
-        except TokenError:
-            print("Unable to extract from {}, failed with tokenizing".format(file))
-            return
-        tree = atok.tree
-        function_to_parameters = {}
-        for node in ast.walk(tree):
-            if not hasattr(node, 'parent'):
-                node.parent = None
-            for child in ast.iter_child_nodes(node):
-                child.parent = node
-        BinOpsCollector(function_to_parameters, file_id, file, resulting_json).visit(tree)
+    print("Extracting calls from {}".format(file))
+    tree = try_to_extract(file)
+    if tree is None:
+        return
+    function_to_parameters = {}
+    for node in ast.walk(tree):
+        if not hasattr(node, 'parent'):
+            node.parent = None
+        for child in ast.iter_child_nodes(node):
+            child.parent = node
+    BinOpsCollector(function_to_parameters, file_id, file, resulting_json).visit(tree)

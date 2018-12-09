@@ -13,7 +13,6 @@ from collections import Counter, namedtuple
 import math
 from keras.models import Sequential, load_model
 from keras.layers.core import Dense, Dropout
-import random
 import time
 import Util
 import LearningDataSwappedArgs
@@ -60,7 +59,7 @@ def prepare_xy_pairs(data_paths, learning_data):
     code_pieces = [] # keep calls in addition to encoding as x,y pairs (to report detected anomalies)
     
     for code_piece in Util.DataReader(data_paths):
-        learning_data.code_to_xy_pairs(code_piece, xs, ys, name_to_vector, type_to_vector, node_type_to_vector, code_pieces)
+        learning_data.code_to_xy_pairs(code_piece, xs, ys, name_to_vector, type_to_vector, node_type_to_vector, operator_to_vector, code_pieces)
     x_length = len(xs[0])
     
 #     print("Stats: " + str(learning_data.stats))
@@ -80,7 +79,8 @@ if __name__ == '__main__':
         name_to_vector_file = join(getcwd(), sys.argv[3])
         type_to_vector_file = join(getcwd(), sys.argv[4])
         node_type_to_vector_file = join(getcwd(), sys.argv[5])
-        training_data_paths, validation_data_paths = parse_data_paths(sys.argv[6:])
+        operator_to_vector_file = join(getcwd(), sys.argv[6])
+        training_data_paths, validation_data_paths = parse_data_paths(sys.argv[7:])
     elif option == "--load":
         print("--load option is buggy and currently disabled")
         sys.exit(1)
@@ -88,7 +88,8 @@ if __name__ == '__main__':
         name_to_vector_file = join(getcwd(), sys.argv[4])
         type_to_vector_file = join(getcwd(), sys.argv[5])
         node_type_to_vector_file = join(getcwd(), sys.argv[6])
-        training_data_paths, validation_data_paths = parse_data_paths(sys.argv[7:])
+        operator_to_vector_file = join(getcwd(), sys.argv[7])
+        training_data_paths, validation_data_paths = parse_data_paths(sys.argv[8:])
     else:
         print("Incorrect arguments")
         sys.exit(1)
@@ -99,6 +100,8 @@ if __name__ == '__main__':
         type_to_vector = json.load(f)
     with open(node_type_to_vector_file) as f:
         node_type_to_vector = json.load(f)
+    with open(operator_to_vector_file) as f:
+        operator_to_vector = json.load(f)
     
     if what == "SwappedArgs":
         learning_data = LearningDataSwappedArgs.LearningData()
@@ -117,16 +120,7 @@ if __name__ == '__main__':
         sys.exit(1)
     
     print("Statistics on training data:")
-    if what == "BinOperator":
-        all_operators = learning_data.pre_scan(training_data_paths, validation_data_paths)
-        embeddings = {}
-        for i, operator in enumerate(all_operators):
-            embeddings[operator] = [0] * len(all_operators)
-            embeddings[operator][i] = 1
-        with open(join(getcwd(), "operator_to_vector.json"), "w") as file:
-            json.dump(embeddings, file, sort_keys=True, indent=4)
-    else:
-        learning_data.pre_scan(training_data_paths, validation_data_paths)
+    learning_data.pre_scan(training_data_paths, validation_data_paths)
 
     # prepare x,y pairs for learning and validation
     print("Preparing xy pairs for training data:")
