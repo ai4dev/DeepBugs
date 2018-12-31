@@ -69,7 +69,7 @@ class LearningData(object):
         right_vector = name_to_vector[right]
         #operator_vector = [0] * len(self.all_operators)
         #operator_vector[self.all_operators.index(operator)] = 1
-        operator_vector = operator_to_vector.get(left_type, [0] * operator_embedding_size)
+        operator_vector = operator_to_vector.get(operator, [0] * operator_embedding_size)
         left_type_vector = type_to_vector.get(left_type, [0]*type_embedding_size)
         right_type_vector = type_to_vector.get(right_type, [0]*type_embedding_size)
         parent_vector = node_type_to_vector[parent]
@@ -83,7 +83,7 @@ class LearningData(object):
             to_replace_operand = right
         file = src.split(" : ")[0]
         all_operands = self.file_to_operands[file]
-        tries_left = 100
+        tries_left = 1000
         found = False
         while (not found) and tries_left > 0:
             other_operand = random.choice(list(all_operands))

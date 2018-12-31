@@ -54,7 +54,7 @@ class LearningData(object):
         right_vector = name_to_vector[right]
         #operator_vector = [0] * len(self.all_operators)
         #operator_vector[self.all_operators.index(operator)] = 1
-        operator_vector = operator_to_vector.get(left_type, [0]*operator_embedding_size)
+        operator_vector = operator_to_vector.get(operator, [0]*operator_embedding_size)
         left_type_vector = type_to_vector.get(left_type, [0]*type_embedding_size)
         right_type_vector = type_to_vector.get(right_type, [0]*type_embedding_size)
         parent_vector = node_type_to_vector[parent]
@@ -73,7 +73,7 @@ class LearningData(object):
         while other_operator_vector == None:
             other_operator = random.choice(self.all_operators)
             if other_operator != operator:
-                other_operator_vector = operator_to_vector.get(left_type, [0] * operator_embedding_size)
+                other_operator_vector = operator_to_vector.get(other_operator, [0]*operator_embedding_size)
         
         x_incorrect = left_vector + right_vector + other_operator_vector + left_type_vector + right_type_vector + \
                       parent_vector + grand_parent_vector
@@ -87,4 +87,3 @@ class LearningData(object):
     
     def normal_score(self, y_prediction_orig, y_prediction_changed):
         return y_prediction_changed
-    

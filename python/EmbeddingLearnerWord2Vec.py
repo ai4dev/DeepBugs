@@ -13,10 +13,11 @@ import json
 from gensim.models import Word2Vec
 
 root_global = getcwd()
-tech_files_dir = join(root_global, "data/tech/")
+#tech_files_dir = join(root_global, "data/tech/")
+tech_files_dir = root_global
 
 nb_tokens_in_context = 20
-kept_tokens = 10000
+kept_tokens = 50000
 
 embedding_size = 200
 

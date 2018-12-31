@@ -32,19 +32,22 @@ class NodeTypes:
 
 def get_tokens(file, resulting_json):
     result = []
-
-    with open(file) as fin:
-        print("Collecting from {}".format(file))
+    try:
+        fin = open(file)
+    except IOError:
+        return
+    print("Collecting from {}".format(file))
+    try:
+        tokens = generate_tokens(BytesIO(fin.read().encode('utf-8')).readline)
+    except UnicodeDecodeError:
         try:
-            tokens = generate_tokens(BytesIO(fin.read().encode('utf-8')).readline)
+            tokens = generate_tokens(BytesIO(fin.read().encode("cp1252")).readline)
         except UnicodeDecodeError:
-            try:
-                tokens = generate_tokens(BytesIO(fin.read().encode("cp1252")).readline)
-            except UnicodeDecodeError:
-                return
-        if tokens is None:
             return
-        last = (-1, "")
+    if tokens is None:
+        return
+    last = (-1, "")
+    try:
         for toknum, tokval, _, _, _ in tokens:
             if toknum == OP:
                 result.append(standard_string.format(tokval))
@@ -61,6 +64,11 @@ def get_tokens(file, resulting_json):
             else:
                 result.append(standard_string.format(tokval))
             last = (toknum, tokval)
+    except TokenError:
+        last = (-1, "")
+    except IndentationError:
+        last = (-1, "")
+
     resulting_json.append(result)
 
 
